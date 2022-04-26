@@ -113,7 +113,7 @@ def sample_pagerank(corpus, damping_factor, n):
             sample = random.choices([page for page in sample_transition], [sample_transition[page] for page in sample_transition])[0]
         
         # Update the running count / probability in our output for the selected sample
-        output[sample] += output[sample] / n
+        output[sample] = output[sample] + 1 / n
 
     return output
     # raise NotImplementedError
