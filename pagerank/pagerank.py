@@ -109,7 +109,8 @@ def sample_pagerank(corpus, damping_factor, n):
             # From docs: https://docs.python.org/3/library/random.html#random.choices
             # Our population will be the list of pages from our transition model,
             # the weights will be the values from our transition model
-            sample = random.choices([page for page in sample_transition], [sample_transition[page] for page in sample_transition])
+            # This function returns a list, so we only grab the first element
+            sample = random.choices([page for page in sample_transition], [sample_transition[page] for page in sample_transition])[0]
         
         # Update the running count / probability in our output for the selected sample
         output[sample] += output[sample] / n
