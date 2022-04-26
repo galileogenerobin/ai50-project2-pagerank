@@ -2,6 +2,7 @@ import os
 import random
 import re
 import sys
+import copy
 
 DAMPING = 0.85
 SAMPLES = 10000
@@ -106,12 +107,14 @@ def sample_pagerank(corpus, damping_factor, n):
         else:
             # For succeeding samples, the weight of selection for samples will be based on the transition model
             sample_transition = transition_model(corpus, sample, damping_factor)
+
             # From docs: https://docs.python.org/3/library/random.html#random.choices
             # Our population will be the list of pages from our transition model,
             # the weights will be the values from our transition model
             # This function returns a list, so we only grab the first element
-            sample = random.choices([page for page in sample_transition], [sample_transition[page] for page in sample_transition])[0]
-        
+            sample = random.choices([page for page in sample_transition], [sample_transition[page]
+                                    for page in sample_transition])[0]
+            
         # Update the running count / probability in our output for the selected sample
         output[sample] = output[sample] + 1 / n
 
@@ -128,7 +131,49 @@ def iterate_pagerank(corpus, damping_factor):
     their estimated PageRank value (a value between 0 and 1). All
     PageRank values should sum to 1.
     """
-    raise NotImplementedError
+    # Set up our output dictionary and initialize values to 1 / count of all web pages
+    output = {}
+    web_pages_count = len(corpus)
+    for web_page in corpus:
+        # This is our baseline probability value
+        output[web_page] = 1 / web_pages_count
+
+    # Iterate through the probability distribution
+    while True:
+        # Create a deep copy of the existing probability distribution (since we will modify this with each iteration and compare the values afterwards)
+        output_copy = copy.deepcopy(output)
+        for current_page in output_copy:
+            # Sum of probabilities to visit the current_page from the other pages
+            prob_visit_from_other = 0
+
+            # Iterate through all pages to identify which pages link to current_page
+            for web_page in corpus:
+                # Check if web_page links to other pages
+                if not corpus[web_page] == set():
+                    # Check if web_page links to current_page
+                    if current_page in corpus[web_page]:
+                        # If so, we add the probability of visiting the current_page from web_page
+                        # This is equal to the probability that we are in web_page divided by the number of links from the web_page
+                        prob_visit_from_other = prob_visit_from_other + output_copy[web_page] / len(corpus[web_page])
+                else:
+                    # Otherwise, the probability of visiting current_page from web_page is divided equally among all pages
+                    prob_visit_from_other = prob_visit_from_other + output_copy[web_page] / web_pages_count
+
+            # We update the distribution for current_page using our iteration formula
+            output[current_page] = (1 - damping_factor) / web_pages_count + damping_factor * (prob_visit_from_other)
+        
+        # Check if we reached a covergence by comparing the previous values with the new values
+        # We can do this via list comprehension for the difference in values
+        # Basically, we are creating a list of the difference between the previous and new values only if such difference is greater than 0.001
+        significant_differences = [output[page] - output_copy[page]
+                                   for page in output_copy if abs(output[page] - output_copy[page]) > 0.001]
+        
+        # If there are no items in significant_difference, then we are done
+        if len(significant_differences) == 0:
+            break
+
+    return output
+    # raise NotImplementedError
 
 
 if __name__ == "__main__":
